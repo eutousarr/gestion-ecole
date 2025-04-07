@@ -1,6 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import DiscordProvider from "next-auth/providers/discord";
+import GoogleProvider from "next-auth/providers/google";
 
 import { db } from "@/server/db";
 
@@ -19,10 +20,9 @@ declare module "next-auth" {
     } & DefaultSession["user"];
   }
 
-  // interface User {
-  //   // ...other properties
-  //   // role: UserRole;
-  // }
+  interface User {
+    role?: string; // Add the role property to the User interface
+  }
 }
 
 /**
@@ -32,6 +32,7 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
+    GoogleProvider,
     DiscordProvider,
     /**
      * ...add more providers here.
@@ -45,12 +46,17 @@ export const authConfig = {
   ],
   adapter: PrismaAdapter(db),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: async ({ session, user }) => {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+          // role: user.role,
+          // Add more properties here
+          role: user.role ?? 'user', // Use nullish coalescing operator for safer assignment
+        },
+      };
+    },
   },
 } satisfies NextAuthConfig;
